@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Notes & Task Manager on Cloud</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f6f8; max-width: 650px; margin: 40px auto; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        h2 { color: #1e293b; margin-top: 0; }
+        .input-row { display: flex; gap: 10px; margin-bottom: 20px; }
+        input { flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 14px; }
+        button { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .add-btn { background: #2563eb; color: white; }
+        .done-btn { background: #16a34a; color: white; margin-right: 5px; }
+        .del-btn { background: #dc2626; color: white; }
+        .task-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #e2e8f0; }
+        .completed { text-decoration: line-through; color: gray; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2>Student Notes & Task Manager (Cloud Hosted)</h2>
+    <div class="input-row">
+        <input type="text" id="taskInput" placeholder="Enter study task or note (e.g., Prepare Java Viva)..." />
+        <button class="add-btn" onclick="addTask()">Add Task</button>
+    </div>
+    <div id="taskList"></div>
+</div>
+
+<script>
+    async function loadTasks() {
+        const res = await fetch('/tasks');
+        const tasks = await res.json();
+        const list = document.getElementById('taskList');
+        list.innerHTML = '';
+        tasks.forEach(t => {
+            const isDone = t.status === 'Completed';
+            list.innerHTML += `
+                <div class="task-item">
+                    <span class="${isDone ? 'completed' : ''}">
+                        <strong>#${t.id}</strong> - ${t.title} <em>(${t.status})</em>
+                    </span>
+                    <div>
+                        ${!isDone ? `<button class="done-btn" onclick="markDone(${t.id})">Done</button>` : ''}
+                        <button class="del-btn" onclick="deleteTask(${t.id})">Delete</button>
+                    </div>
+                </div>`;
+        });
+    }
+
+    async function addTask() {
+        const title = document.getElementById('taskInput').value.trim();
+        if (!title) return alert('Please type a task first!');
+        await fetch('/tasks/add?title=' + encodeURIComponent(title), { method: 'POST' });
+        document.getElementById('taskInput').value = '';
+        loadTasks();
+    }
+
+    async function markDone(id) {
+        await fetch('/tasks/done/' + id, { method: 'PUT' });
+        loadTasks();
+    }
+
+    async function deleteTask(id) {
+        await fetch('/tasks/delete/' + id, { method: 'DELETE' });
+        loadTasks();
+    }
+
+    loadTasks();
+</script>
+</body>
+</html>
